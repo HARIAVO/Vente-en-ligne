@@ -276,5 +276,16 @@
 
         render();
     </script>
+    <div id="loginScreen" class="view view-active p-8 flex flex-col items-center justify-center min-h-screen bg-indigo-600 text-white">
+    <h1 class="text-4xl font-black mb-8 italic">YOOU</h1>
+    <div class="bg-white p-6 rounded-[2.5rem] w-full max-w-sm text-slate-900 shadow-2xl">
+        <p class="text-xs font-bold text-slate-400 uppercase mb-4 text-center">Accès Sécurisé</p>
+        <input type="tel" id="userPhone" placeholder="Numéro de téléphone" class="w-full p-4 bg-slate-50 rounded-2xl mb-3 outline-none border border-slate-100">
+        <input type="password" id="userPass" placeholder="Mot de passe" class="w-full p-4 bg-slate-50 rounded-2xl mb-6 outline-none border border-slate-100">
+        <button onclick="handleLogin()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl">
+            Se connecter
+        </button>
+    </div>
+    </div>
 </body>
 </html>
