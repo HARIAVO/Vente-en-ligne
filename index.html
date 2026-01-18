@@ -40,6 +40,11 @@
         <span class="text-xl font-black text-indigo-600 tracking-tighter italic">YOOU <span class="text-[9px] text-slate-300 font-normal not-italic ml-1">V7</span></span>
         <div class="flex gap-2">
             <button onclick="switchView('trash')" class="bg-slate-50 p-2 rounded-xl text-slate-400"><i class="bi bi-trash3"></i></button>
+            <button onclick="document.getElementById('importFile').click()" class="bg-slate-50 p-2 rounded-xl text-emerald-600">
+                <i class="bi bi-cloud-arrow-up"></i>
+            </button>
+            <input type="file" id="importFile" class="hidden" accept=".json" onchange="importData(this)">
+            
             <button onclick="exportData()" class="bg-slate-50 p-2 rounded-xl text-indigo-600"><i class="bi bi-download"></i></button>
         </div>
     </header>
@@ -320,7 +325,7 @@ Merci de votre confiance ! 🪡`;
     if (platform === 'wa') {
         window.open(`https://wa.me/${MASTER_NUMBER.replace('+', '')}?text=${encodeURIComponent(msg)}`);
     }
-}
+        }
 
         // --- RAPPELS ---
         function addReminder() {
@@ -391,14 +396,35 @@ Merci de votre confiance ! 🪡`;
             saveAll(); switchView('dashboard');
         });
 
-        function setDashFilter(f) { currentDashFilter = f; render(); }
+        // --- IMPORT / EXPORT ---
         function exportData() {
             const b = new Blob([JSON.stringify({orders, trash, reminders})], {type: 'application/json'});
             const a = document.createElement('a'); a.href = URL.createObjectURL(b);
             a.download = `YOOU_Backup.json`; a.click();
         }
+
+        function importData(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (confirm("Remplacer les données actuelles par ce fichier ?")) {
+                        orders = importedData.orders || [];
+                        trash = importedData.trash || [];
+                        reminders = importedData.reminders || [];
+                        saveAll();
+                        alert("Synchronisation réussie !");
+                        window.location.reload();
+                    }
+                } catch (err) { alert("Fichier invalide."); }
+            };
+            reader.readAsText(file);
+        }
+
+        function setDashFilter(f) { currentDashFilter = f; render(); }
         render();
     </script>
 </body>
 </html>
-
