@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOOU - Gestion Couture</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .active-nav { color: #6366f1; transform: translateY(-5px); }
+        .view { display: none; animation: fadeIn 0.3s ease; }
+        .view-active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-[#F8FAFC] text-slate-900 pb-28">
+
+    <header class="p-5 flex justify-between items-center bg-white sticky top-0 z-50 border-b border-slate-100 shadow-sm">
+        <div>
+            <p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Application</p>
+            <h1 class="text-2xl font-black tracking-tighter" id="pageTitle">YOOU</h1>
+        </div>
+        <button onclick="exportData()" class="text-[10px] font-black bg-slate-900 text-white px-4 py-2 rounded-xl uppercase flex items-center gap-2">
+            <i class="bi bi-download"></i> Sauvegarde
+        </button>
+    </header>
+
+    <div id="viewDashboard" class="view view-active p-4 max-w-2xl mx-auto">
+        <div class="relative mb-6">
+            <i class="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="text" id="searchInput" oninput="render()" placeholder="Rechercher un client..." 
+                   class="w-full pl-12 pr-4 py-4 bg-white rounded-3xl border border-slate-100 shadow-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 mb-6">
+            <div class="bg-indigo-600 p-5 rounded-[2.5rem] text-white shadow-xl shadow-indigo-100">
+                <p class="text-[9px] font-bold opacity-70 uppercase mb-1">Total Encaissé</p>
+                <p id="totalAvance" class="text-xl font-black font-mono">0 Ar</p>
+            </div>
+            <div class="bg-white p-5 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                <p class="text-[9px] font-bold text-slate-400 uppercase mb-1">Reste Client</p>
+                <p id="totalReste" class="text-xl font-black text-rose-500 font-mono">0 Ar</p>
+            </div>
+        </div>
+
+        <div class="flex gap-2 mb-6 overflow-x-auto pb-2 no-scrollbar">
+            <button onclick="setFilter('En attente')" id="f1" class="px-6 py-2.5 rounded-full text-[10px] font-black uppercase whitespace-nowrap">À faire</button>
+            <button onclick="setFilter('Cousu')" id="f2" class="px-6 py-2.5 rounded-full text-[10px] font-black uppercase whitespace-nowrap">Cousu</button>
+            <button onclick="setFilter('Livré')" id="f3" class="px-6 py-2.5 rounded-full text-[10px] font-black uppercase whitespace-nowrap">Archives</button>
+        </div>
+
+        <div id="orderList" class="space-y-4"></div>
+    </div>
+
+    <div id="viewCalendar" class="view p-4 max-w-2xl mx-auto">
+        <div id="dailyList" class="space-y-8"></div>
+    </div>
+
+    <div id="viewAdd" class="view p-4 max-w-2xl mx-auto">
+        <div class="bg-white rounded-[2.5rem] p-8 shadow-xl border border-slate-50">
+            <h2 id="formHeadline" class="text-2xl font-extrabold mb-8 text-indigo-900">Nouvelle Vente YOOU ✍️</h2>
+            <form id="orderForm" class="space-y-4">
+                <input type="hidden" id="editId">
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Client</label>
+                    <input type="text" id="client" placeholder="Nom du client" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border-none" required>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Contact Client (Tél)</label>
+                    <input type="text" id="contactClient" placeholder="Numéro du client" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="text" id="type" placeholder="Article" class="p-4 bg-slate-50 rounded-2xl outline-none" required>
+                    <input type="text" id="taille" placeholder="Taille" class="p-4 bg-slate-50 rounded-2xl outline-none text-center">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-green-50 p-4 rounded-2xl border border-green-100">
+                        <label class="text-[9px] font-bold text-green-500 uppercase block">Avance (Ar)</label>
+                        <input type="number" id="avance" value="0" class="w-full bg-transparent font-black text-green-700 outline-none">
+                    </div>
+                    <div class="bg-rose-50 p-4 rounded-2xl border border-rose-100">
+                        <label class="text-[9px] font-bold text-rose-500 uppercase block">Reste (Ar)</label>
+                        <input type="number" id="reste" value="0" class="w-full bg-transparent font-black text-rose-700 outline-none">
+                    </div>
+                </div>
+                <input type="text" id="lieu" placeholder="Lieu de livraison" class="w-full p-4 bg-slate-50 rounded-2xl outline-none">
+                <button type="submit" id="submitBtn" class="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black text-xs uppercase tracking-widest shadow-2xl active:scale-95 transition-all">
+                    Valider la commande
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-100 p-5 flex justify-around items-center z-50">
+        <button onclick="switchView('dashboard')" id="navDash" class="flex flex-col items-center gap-1 active-nav">
+            <i class="bi bi-grid-fill text-xl"></i>
+            <span class="text-[9px] font-black uppercase tracking-tighter">Ventes</span>
+        </button>
+        <button onclick="switchView('calendar')" id="navCal" class="flex flex-col items-center gap-1 text-slate-300">
+            <i class="bi bi-calendar-event text-xl"></i>
+            <span class="text-[9px] font-black uppercase tracking-tighter">Agenda</span>
+        </button>
+        <button onclick="switchView('add')" id="navAdd" class="flex flex-col items-center gap-1 text-slate-300">
+            <i class="bi bi-plus-circle-fill text-xl"></i>
+            <span class="text-[9px] font-black uppercase tracking-tighter">Nouveau</span>
+        </button>
+    </nav>
+
+    <script>
+        let orders = JSON.parse(localStorage.getItem('yoou_app_db')) || [];
+        let currentFilter = 'En attente';
+        const MY_PHONE = "261388015322"; // Votre numéro fixe YOOU
+
+        function getReceiptText(o) {
+            return `*REÇU YOOU*\n-----------------------\nClient: ${o.client.toUpperCase()}\nContact Client: ${o.contactClient || 'N/A'}\nArticle: ${o.type} (${o.taille})\n-----------------------\nTotal Payé: ${o.avance.toLocaleString()} Ar\nReste: ${o.reste.toLocaleString()} Ar\nLivraison: ${o.lieu}\n-----------------------\nDate: ${o.date}\nMerci de faire confiance à YOOU ! ✨`;
+        }
+
+        function sendWhatsApp(id) {
+            const o = orders.find(x => x.id === id);
+            const text = encodeURIComponent(getReceiptText(o));
+            window.open(`https://api.whatsapp.com/send?phone=${MY_PHONE}&text=${text}`, '_blank');
+        }
+
+        function sendMessenger(id) {
+            const o = orders.find(x => x.id === id);
+            navigator.clipboard.writeText(getReceiptText(o)).then(() => {
+                alert("Reçu YOOU copié ! Collez-le dans Messenger.");
+                window.open(`https://m.me/`, '_blank');
+            });
+        }
+
+        function exportData() {
+            const blob = new Blob([JSON.stringify(orders, null, 2)], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `YOOU_sauvegarde_${new Date().toLocaleDateString()}.json`;
+            a.click();
+        }
+
+        function switchView(view) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('view-active'));
+            document.querySelectorAll('nav button').forEach(b => b.classList.replace('active-nav', 'text-slate-300'));
+            if(view === 'dashboard') {
+                document.getElementById('viewDashboard').classList.add('view-active');
+                document.getElementById('navDash').classList.add('active-nav');
+                document.getElementById('pageTitle').innerText = "YOOU";
+            } else if(view === 'calendar') {
+                document.getElementById('viewCalendar').classList.add('view-active');
+                document.getElementById('navCal').classList.add('active-nav');
+                document.getElementById('pageTitle').innerText = "Agenda Journalier";
+                renderDaily();
+            } else {
+                document.getElementById('viewAdd').classList.add('view-active');
+                document.getElementById('navAdd').classList.add('active-nav');
+                document.getElementById('pageTitle').innerText = "Nouvelle Vente";
+            }
+        }
+
+        document.getElementById('orderForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const editId = document.getElementById('editId').value;
+            const data = {
+                client: document.getElementById('client').value,
+                contactClient: document.getElementById('contactClient').value,
+                type: document.getElementById('type').value,
+                taille: document.getElementById('taille').value,
+                avance: Number(document.getElementById('avance').value) || 0,
+                reste: Number(document.getElementById('reste').value) || 0,
+                lieu: document.getElementById('lieu').value,
+                date: new Date().toLocaleDateString('fr-FR', {day: 'numeric', month: 'short', year: 'numeric'})
+            };
+            if(editId) {
+                orders = orders.map(o => o.id == editId ? {...o, ...data} : o);
+            } else {
+                orders.unshift({ ...data, id: Date.now(), statut: 'En attente' });
+            }
+            localStorage.setItem('yoou_app_db', JSON.stringify(orders));
+            document.getElementById('orderForm').reset();
+            document.getElementById('editId').value = "";
+            switchView('dashboard');
+            render();
+        });
+
+        function changeStatut(id, nextStatut) {
+            orders = orders.map(o => {
+                if(o.id === id) {
+                    if(nextStatut === 'Livré') {
+                        const totalVente = o.avance + o.reste;
+                        return { ...o, statut: 'Livré', avance: totalVente, reste: 0 };
+                    }
+                    return { ...o, statut: nextStatut };
+                }
+                return o;
+            });
+            localStorage.setItem('yoou_app_db', JSON.stringify(orders));
+            render();
+        }
+
+        function setFilter(f) { currentFilter = f; render(); }
+
+        function render() {
+            const list = document.getElementById('orderList');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = orders.filter(o => o.statut === currentFilter && o.client.toLowerCase().includes(search));
+
+            document.getElementById('totalAvance').innerText = orders.reduce((s,o)=>s+o.avance,0).toLocaleString() + " Ar";
+            document.getElementById('totalReste').innerText = orders.reduce((s,o)=>s+o.reste,0).toLocaleString() + " Ar";
+
+            document.querySelectorAll('[id^="f"]').forEach(btn => btn.className = "px-6 py-2.5 rounded-full text-[10px] font-black bg-white text-slate-300 border border-slate-100 uppercase");
+            const activeTab = currentFilter === 'En attente' ? 'f1' : currentFilter === 'Cousu' ? 'f2' : 'f3';
+            document.getElementById(activeTab).className = "px-6 py-2.5 rounded-full text-[10px] font-black bg-indigo-600 text-white shadow-lg uppercase";
+
+            list.innerHTML = filtered.map(o => `
+                <div class="bg-white p-6 rounded-[2.5rem] border border-slate-50 shadow-sm">
+                    <div class="flex justify-between items-start mb-4">
+                        <div onclick="editOrder(${o.id})">
+                            <h3 class="font-extrabold text-slate-800 leading-tight">${o.client}</h3>
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${o.date} • ${o.lieu}</p>
+                            ${o.contactClient ? `<p class="text-[8px] font-bold text-indigo-400 mt-1">Contact: ${o.contactClient}</p>` : ''}
+                        </div>
+                        <div class="flex gap-2">
+                             <button onclick="sendWhatsApp(${o.id})" class="h-9 w-9 bg-green-500 text-white rounded-full flex items-center justify-center shadow-lg"><i class="bi bi-whatsapp"></i></button>
+                             <button onclick="sendMessenger(${o.id})" class="h-9 w-9 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-lg"><i class="bi bi-messenger"></i></button>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-4 rounded-2xl flex justify-between mb-4 border border-slate-100">
+                        <span class="text-xs font-black text-slate-600">${o.type} (${o.taille})</span>
+                        <div class="text-right">
+                             <p class="text-[8px] font-bold text-rose-400 uppercase">Reste</p>
+                             <p class="text-xs font-black text-rose-500">${o.reste.toLocaleString()} Ar</p>
+                        </div>
+                    </div>
+                    ${o.statut !== 'Livré' ? `
+                        <button onclick="changeStatut(${o.id}, '${o.statut === 'En attente' ? 'Cousu' : 'Livré'}')" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl active:scale-95 transition-all">
+                            ${o.statut === 'En attente' ? 'Cousu 🪡' : 'Livrer ✅'}
+                        </button>` : `<div class="text-center p-4 bg-indigo-50 text-indigo-600 rounded-2xl text-[10px] font-black uppercase tracking-widest italic border border-indigo-100">Payé & Livré ✨</div>`}
+                </div>
+            `).join('');
+        }
+
+        function renderDaily() {
+            const dailyList = document.getElementById('dailyList');
+            const groups = orders.reduce((acc, obj) => { acc[obj.date] = acc[obj.date] || []; acc[obj.date].push(obj); return acc; }, {});
+            if(Object.keys(groups).length === 0) { dailyList.innerHTML = `<p class="text-center text-slate-400 py-20 uppercase font-black text-[10px]">Aucune donnée</p>`; return; }
+            dailyList.innerHTML = Object.keys(groups).map(date => `
+                <div class="space-y-4">
+                    <h3 class="text-[10px] font-black text-indigo-600 uppercase bg-indigo-50 px-5 py-1.5 inline-block rounded-full border border-indigo-100">${date}</h3>
+                    ${groups[date].map(o => `
+                        <div class="flex items-center gap-4 bg-white p-4 rounded-2xl border border-slate-50 shadow-sm">
+                            <div class="h-10 w-10 bg-slate-100 text-slate-800 rounded-xl flex items-center justify-center font-black text-xs uppercase">${o.client[0]}</div>
+                            <div class="flex-grow">
+                                <p class="text-xs font-extrabold text-slate-800 leading-none mb-1">${o.client}</p>
+                                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">${o.type} • ${o.statut}</p>
+                            </div>
+                            <div class="text-right font-black text-xs text-slate-700 font-mono">${(o.avance + o.reste).toLocaleString()} Ar</div>
+                        </div>`).join('')}
+                </div>`).join('');
+        }
+
+        function editOrder(id) {
+            const o = orders.find(x => x.id === id);
+            document.getElementById('editId').value = o.id;
+            document.getElementById('client').value = o.client;
+            document.getElementById('contactClient').value = o.contactClient || "";
+            document.getElementById('type').value = o.type;
+            document.getElementById('taille').value = o.taille;
+            document.getElementById('avance').value = o.avance;
+            document.getElementById('reste').value = o.reste;
+            document.getElementById('lieu').value = o.lieu;
+            document.getElementById('formHeadline').innerText = "Modifier ✏️";
+            switchView('add');
+        }
+
+        render();
+    </script>
+</body>
+</html>
