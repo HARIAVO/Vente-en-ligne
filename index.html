@@ -2,210 +2,401 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YOOU - Gestion Pro Mada</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>YOOU - V7 Final</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: contain; }
         .view { display: none; }
-        .view-active { display: block; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .view-active { display: block; animation: slideIn 0.2s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .status-badge { font-size: 8px; font-weight: 900; padding: 2px 8px; border-radius: 6px; text-transform: uppercase; }
+        .status-afaire { background: #EEF2FF; color: #4F46E5; }
+        .status-cousu { background: #FFF7ED; color: #EA580C; }
+        .status-livre { background: #F0FDF4; color: #16A34A; }
+        #deleteModal { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
     </style>
 </head>
-<body class="bg-[#F8FAFC] text-slate-900 pb-28">
+<body class="bg-[#F8FAFC] text-slate-900 pb-24">
 
-    <header class="p-5 flex justify-between items-center bg-white sticky top-0 z-50 border-b border-slate-100">
-        <h1 class="text-2xl font-black text-indigo-600 italic">YOOU</h1>
-        <button onclick="exportData()" class="text-[10px] font-black bg-slate-100 px-3 py-2 rounded-xl uppercase">Sauvegarde</button>
+    <div id="deleteModal">
+        <div class="bg-white w-full max-w-xs rounded-[2.5rem] p-6 shadow-2xl text-center">
+            <div class="w-16 h-16 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                <i class="bi bi-trash3-fill"></i>
+            </div>
+            <h3 class="text-lg font-extrabold text-slate-800 mb-2">Corbeille ?</h3>
+            <p class="text-slate-500 text-[10px] mb-6 font-black uppercase">Envoyer cette commande à la corbeille ?</p>
+            <div class="flex gap-3">
+                <button onclick="closeDeleteModal()" class="flex-grow py-3 rounded-2xl bg-slate-100 text-slate-600 font-black text-[10px] uppercase">Non</button>
+                <button id="confirmDeleteBtn" class="flex-grow py-3 rounded-2xl bg-rose-500 text-white font-black text-[10px] uppercase shadow-lg shadow-rose-100">Oui</button>
+            </div>
+        </div>
+    </div>
+
+    <header class="bg-white p-4 sticky top-0 z-50 flex justify-between items-center border-b border-slate-100">
+        <span class="text-xl font-black text-indigo-600 tracking-tighter italic">YOOU <span class="text-[9px] text-slate-300 font-normal not-italic ml-1">V7</span></span>
+        <div class="flex gap-2">
+            <button onclick="switchView('trash')" class="bg-slate-50 p-2 rounded-xl text-slate-400"><i class="bi bi-trash3"></i></button>
+            <button onclick="exportData()" class="bg-slate-50 p-2 rounded-xl text-indigo-600"><i class="bi bi-download"></i></button>
+        </div>
     </header>
 
-    <div id="viewDashboard" class="view view-active p-4 max-w-2xl mx-auto">
-        <div class="flex gap-2 mb-6 overflow-x-auto pb-2 no-scrollbar">
-            <button onclick="setFilter('En attente')" id="f1" class="px-6 py-2.5 rounded-full text-[10px] font-black uppercase">À faire</button>
-            <button onclick="setFilter('Cousu')" id="f2" class="px-6 py-2.5 rounded-full text-[10px] font-black uppercase">Cousu</button>
-            <button onclick="setFilter('Livré')" id="f3" class="px-6 py-2.5 rounded-full text-[10px] font-black uppercase">Archives</button>
+    <div id="viewDashboard" class="view view-active p-4 max-w-md mx-auto">
+        <div class="flex gap-2 mb-6 overflow-x-auto no-scrollbar py-1">
+            <button onclick="setDashFilter('À faire')" id="df1" class="px-6 py-2.5 rounded-full text-[10px] font-black uppercase shadow-sm">À faire</button>
+            <button onclick="setDashFilter('Cousu')" id="df2" class="px-6 py-2.5 rounded-full text-[10px] font-black uppercase shadow-sm">Cousu</button>
+            <button onclick="setDashFilter('Livré')" id="df3" class="px-6 py-2.5 rounded-full text-[10px] font-black uppercase shadow-sm">Livré</button>
         </div>
         <div id="orderList" class="space-y-4"></div>
     </div>
 
-    <div id="viewAdd" class="view p-4 max-w-2xl mx-auto">
-        <div class="bg-white rounded-[2.5rem] p-8 shadow-xl">
-            <h2 id="formHeadline" class="text-2xl font-extrabold mb-8">Prise de commande</h2>
-            <form id="orderForm" class="space-y-4">
+    <div id="viewTrash" class="view p-4 max-w-md mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-lg font-black text-slate-800 italic">Corbeille</h2>
+            <button onclick="emptyTrash()" class="text-[10px] font-black text-rose-500 uppercase">Tout vider</button>
+        </div>
+        <div id="trashList" class="space-y-4"></div>
+    </div>
+
+    <div id="viewReminders" class="view p-4 max-w-md mx-auto">
+        <div class="bg-white p-4 rounded-3xl shadow-sm mb-4 border border-slate-100 flex gap-2">
+            <input type="text" id="reminderInput" placeholder="Note rapide..." class="flex-grow bg-slate-50 p-3 rounded-2xl outline-none text-sm">
+            <button onclick="addReminder()" class="bg-indigo-600 text-white w-12 rounded-2xl flex items-center justify-center shadow-lg"><i class="bi bi-plus-lg"></i></button>
+        </div>
+        <div id="remindersList" class="space-y-3"></div>
+    </div>
+
+    <div id="viewCalendar" class="view p-4 max-w-md mx-auto">
+        <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 mb-6 space-y-3">
+            <h2 class="text-xs font-black uppercase text-indigo-600 mb-2 italic">Recherche & Filtres</h2>
+            <div class="grid grid-cols-2 gap-2">
+                <input type="text" id="filterLieu" oninput="renderDaily()" placeholder="Par Lieu..." class="p-3 bg-slate-50 rounded-xl text-xs outline-none border border-transparent focus:border-indigo-200">
+                <select id="filterStatus" onchange="renderDaily()" class="p-3 bg-slate-50 rounded-xl text-xs outline-none font-bold">
+                    <option value="Tous">Tous les états</option>
+                    <option value="À faire">À faire</option>
+                    <option value="Cousu">Cousu</option>
+                    <option value="Livré">Livré</option>
+                </select>
+            </div>
+            <input type="date" id="filterDate" onchange="renderDaily()" class="w-full p-3 bg-slate-50 rounded-xl text-xs outline-none">
+            <button onclick="resetFilters()" class="w-full text-[9px] font-bold text-slate-400 uppercase tracking-widest">Réinitialiser les filtres</button>
+        </div>
+        <div id="dailyList" class="space-y-6"></div>
+    </div>
+
+    <div id="viewStats" class="view p-4 max-w-md mx-auto"><div id="statsContent" class="space-y-4"></div></div>
+
+    <div id="viewAdd" class="view p-4 max-w-md mx-auto">
+        <div class="bg-white rounded-[2.5rem] p-6 shadow-xl">
+            <h2 class="text-xl font-extrabold mb-6 text-slate-800">Commande</h2>
+            <form id="orderForm" class="space-y-3">
                 <input type="hidden" id="editId">
-                
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Date de Prise (Mada)</label>
-                        <input type="date" id="datePrise" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border-none text-xs">
-                    </div>
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Livraison Prévue</label>
-                        <input type="date" id="dateLivraison" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border-none text-xs" required>
-                    </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="date" id="datePrise" class="p-4 bg-slate-50 rounded-2xl outline-none text-sm font-bold" required>
+                    <input type="text" id="client" placeholder="Client" class="p-4 bg-slate-50 rounded-2xl outline-none text-sm" required>
                 </div>
-
-                <input type="text" id="client" placeholder="Nom du client" class="w-full p-4 bg-slate-50 rounded-2xl outline-none" required>
-                <input type="text" id="type" placeholder="Article" class="w-full p-4 bg-slate-50 rounded-2xl outline-none" required>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-green-50 p-4 rounded-2xl">
-                        <label class="text-[9px] font-bold text-green-500 uppercase">Avance (Ar)</label>
-                        <input type="number" id="avance" value="0" class="w-full bg-transparent font-black outline-none">
-                    </div>
-                    <div class="bg-rose-50 p-4 rounded-2xl">
-                        <label class="text-[9px] font-bold text-rose-500 uppercase">Reste (Ar)</label>
-                        <input type="number" id="reste" value="0" class="w-full bg-transparent font-black outline-none">
-                    </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="type" placeholder="Article" class="p-4 bg-slate-50 rounded-2xl outline-none text-sm" required>
+                    <input type="text" id="couleur" placeholder="Couleur" class="p-4 bg-slate-50 rounded-2xl outline-none text-sm font-bold uppercase">
                 </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <input type="number" id="coutMatos" placeholder="Coût Tissu" class="p-4 bg-slate-50 rounded-2xl outline-none text-xs">
-                    <input type="number" id="coutMO" placeholder="Coût Main d'œuvre" class="p-4 bg-slate-50 rounded-2xl outline-none text-xs">
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="contact" placeholder="Téléphone" class="p-4 bg-slate-50 rounded-2xl outline-none text-sm">
+                    <input type="text" id="lieu" placeholder="Lieu de livraison" class="p-4 bg-slate-50 rounded-2xl outline-none text-sm">
                 </div>
-
-                <button type="submit" class="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black text-xs uppercase tracking-widest shadow-xl">
-                    Enregistrer la commande
-                </button>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-green-50 p-3 rounded-2xl"><label class="text-[8px] font-bold text-green-500 uppercase">Avance</label><input type="number" id="avance" value="0" class="w-full bg-transparent font-black outline-none text-sm"></div>
+                    <div class="bg-rose-50 p-3 rounded-2xl"><label class="text-[8px] font-bold text-rose-500 uppercase">Reste</label><input type="number" id="reste" value="0" class="w-full bg-transparent font-black outline-none text-sm"></div>
+                </div>
+                <input type="text" id="taille" placeholder="Taille / Mesures" class="w-full p-4 bg-slate-50 rounded-2xl outline-none text-sm">
+                <div class="p-4 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 text-center" onclick="document.getElementById('photoInput').click()">
+                    <input type="file" id="photoInput" accept="image/*" class="hidden" onchange="previewImage(this)">
+                    <span class="text-xs font-bold text-slate-400"><i class="bi bi-camera-fill"></i> Ajouter Photo</span>
+                    <img id="imagePreview" class="mt-2 rounded-xl hidden max-h-32 mx-auto border-2 border-white">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black text-sm uppercase shadow-lg">Enregistrer</button>
             </form>
         </div>
     </div>
 
-    <div id="viewFinances" class="view p-4 max-w-2xl mx-auto">
-        <h2 class="text-xl font-black mb-6">Rentabilité 💰</h2>
-        <div id="financeList" class="space-y-4"></div>
-    </div>
-
-    <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-100 p-5 flex justify-around items-center z-50">
-        <button onclick="switchView('dashboard')" id="navDash" class="flex flex-col items-center gap-1 active-nav"><i class="bi bi-ui-checks-grid text-xl"></i><span class="text-[9px] font-black">SUIVI</span></button>
-        <button onclick="switchView('finances')" id="navFin" class="flex flex-col items-center gap-1 text-slate-300"><i class="bi bi-wallet2 text-xl"></i><span class="text-[9px] font-black">COÛTS</span></button>
-        <button onclick="openAddView()" id="navAdd" class="flex flex-col items-center gap-1 text-slate-300"><i class="bi bi-plus-circle-fill text-xl"></i><span class="text-[9px] font-black">NOUVEAU</span></button>
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-100 p-2 flex justify-around items-center z-50">
+        <button onclick="switchView('dashboard')" id="navDash" class="p-3 rounded-2xl text-indigo-600"><i class="bi bi-grid-fill text-xl"></i></button>
+        <button onclick="switchView('reminders')" id="navReminders" class="p-3 rounded-2xl text-slate-300"><i class="bi bi-bell-fill text-xl"></i></button>
+        <button onclick="openAddView()" id="navAdd" class="bg-indigo-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg -mt-8 border-4 border-[#F8FAFC]"><i class="bi bi-plus-lg text-2xl"></i></button>
+        <button onclick="switchView('calendar')" id="navCalendar" class="p-3 rounded-2xl text-slate-300"><i class="bi bi-search text-xl"></i></button>
+        <button onclick="switchView('stats')" id="navStats" class="p-3 rounded-2xl text-slate-300"><i class="bi bi-bar-chart-fill text-xl"></i></button>
     </nav>
 
     <script>
-        let orders = JSON.parse(localStorage.getItem('yoou_v2_db')) || [];
-        let currentFilter = 'En attente';
+        const MASTER_NUMBER = "+261388015322";
+        let orders = JSON.parse(localStorage.getItem('yoou_app_db')) || [];
+        let trash = JSON.parse(localStorage.getItem('yoou_trash_db')) || [];
+        let reminders = JSON.parse(localStorage.getItem('yoou_reminders_db')) || [];
+        let currentDashFilter = 'À faire';
+        let currentPhotoBase64 = "";
 
-        // Fonction pour obtenir la date actuelle au format Mada (Y-m-d)
-        function getMadaDate() {
-            return new Date().toLocaleDateString('en-CA', {timeZone: 'Indian/Antananarivo'});
+        function getMadaDate() { return new Date().toLocaleDateString('en-CA', {timeZone: 'Indian/Antananarivo'}); }
+        
+        function saveAll() {
+            localStorage.setItem('yoou_app_db', JSON.stringify(orders));
+            localStorage.setItem('yoou_trash_db', JSON.stringify(trash));
+            localStorage.setItem('yoou_reminders_db', JSON.stringify(reminders));
         }
 
-        function getDayCounter(creationDateStr) {
-            const creation = new Date(creationDateStr);
-            creation.setHours(0,0,0,0);
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            const diffTime = today - creation;
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
-            return diffDays;
+        function getDayDiff(dateStr) {
+            const start = new Date(dateStr); start.setHours(0,0,0,0);
+            const today = new Date(); today.setHours(0,0,0,0);
+            return Math.floor((today - start) / (1000 * 60 * 60 * 24)) + 1;
         }
 
+        function getProbableDelivery(dateStr) {
+            const d1 = new Date(dateStr); d1.setDate(d1.getDate() + 4);
+            const d2 = new Date(dateStr); d2.setDate(d2.getDate() + 5);
+            const opt = { weekday: 'long' };
+            const opt2 = { day: 'numeric', month: 'long' };
+            return `${d1.toLocaleDateString('fr-FR', opt)} ou ${d2.toLocaleDateString('fr-FR', opt)} (${d2.toLocaleDateString('fr-FR', opt2)})`;
+        }
+
+        // --- CORBEILLE & SUPPRESSION ---
+        let idToDelete = null;
+        function askDelete(id) {
+            idToDelete = id;
+            document.getElementById('deleteModal').style.display = 'flex';
+            document.getElementById('confirmDeleteBtn').onclick = () => {
+                const idx = orders.findIndex(o => o.id === idToDelete);
+                if(idx > -1) {
+                    trash.unshift(orders[idx]);
+                    orders.splice(idx, 1);
+                    saveAll();
+                }
+                closeDeleteModal(); render(); renderDaily();
+            };
+        }
+        function closeDeleteModal() { document.getElementById('deleteModal').style.display = 'none'; idToDelete = null; }
+        
+        function renderTrash() {
+            const list = document.getElementById('trashList');
+            if(trash.length === 0) { list.innerHTML = `<p class="text-center py-10 text-slate-400 text-xs font-bold uppercase italic">Corbeille vide</p>`; return; }
+            list.innerHTML = trash.map(o => `
+                <div class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm border border-slate-50 opacity-60">
+                    <div class="text-xs font-bold">${o.client} <br><span class="text-[8px] font-normal text-slate-400 uppercase">${o.type}</span></div>
+                    <button onclick="restoreOrder(${o.id})" class="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase">Restaurer</button>
+                </div>`).join('');
+        }
+        function restoreOrder(id) {
+            const idx = trash.findIndex(o => o.id === id);
+            if(idx > -1) { orders.unshift(trash[idx]); trash.splice(idx, 1); saveAll(); renderTrash(); }
+        }
+        function emptyTrash() { if(confirm("Vider définitivement la corbeille ?")) { trash = []; saveAll(); renderTrash(); } }
+
+        // --- FILTRES & RECHERCHE ---
+        function resetFilters() {
+            document.getElementById('filterLieu').value = "";
+            document.getElementById('filterStatus').value = "Tous";
+            document.getElementById('filterDate').value = "";
+            renderDaily();
+        }
+
+        function renderDaily() {
+            const lieuF = document.getElementById('filterLieu').value.toLowerCase();
+            const statusF = document.getElementById('filterStatus').value;
+            const dateF = document.getElementById('filterDate').value;
+
+            let filtered = orders.filter(o => {
+                const matchLieu = o.lieu ? o.lieu.toLowerCase().includes(lieuF) : (lieuF === "");
+                const matchStatus = (statusF === "Tous") || (o.statut === statusF);
+                const matchDate = (dateF === "") || (o.date === dateF);
+                return matchLieu && matchStatus && matchDate;
+            });
+
+            const groups = filtered.reduce((acc, o) => { acc[o.date] = acc[o.date] || []; acc[o.date].push(o); return acc; }, {});
+            const sorted = Object.keys(groups).sort((a,b) => new Date(b) - new Date(a));
+            
+            const container = document.getElementById('dailyList');
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 text-slate-400 text-xs font-bold uppercase italic">Aucun résultat</div>`;
+                return;
+            }
+
+            container.innerHTML = sorted.map(d => `
+                <div class="space-y-3">
+                    <h3 class="text-[10px] font-black text-slate-400 uppercase ml-2 italic">${new Date(d).toLocaleDateString('fr-FR', {day:'numeric', month:'long'})}</h3>
+                    ${groups[d].map(o => `
+                        <div class="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm border border-slate-50" onclick="editOrder(${o.id})">
+                            <div class="text-xs font-bold">
+                                ${o.client}
+                                <div class="mt-1 flex flex-col gap-0.5">
+                                    <span class="text-[9px] font-black text-indigo-500 uppercase">${o.type}</span>
+                                    <span class="text-[8px] text-slate-400 font-bold uppercase"><i class="bi bi-geo-alt"></i> ${o.lieu || 'Atelier'}</span>
+                                </div>
+                                <div class="mt-2"><span class="status-badge ${o.statut === 'À faire' ? 'status-afaire' : o.statut === 'Cousu' ? 'status-cousu' : 'status-livre'}">${o.statut}</span></div>
+                            </div>
+                            <button onclick="event.stopPropagation(); askDelete(${o.id})" class="text-rose-200 p-2"><i class="bi bi-trash3"></i></button>
+                        </div>`).join('')}
+                </div>`).join('');
+        }
+
+        // --- DASHBOARD ---
         function render() {
             const list = document.getElementById('orderList');
-            const filtered = orders.filter(o => o.statut === currentFilter);
-
-            document.querySelectorAll('[id^="f"]').forEach(btn => btn.className = "px-6 py-2.5 rounded-full text-[10px] font-black bg-white text-slate-300 border border-slate-100 uppercase");
-            const activeTab = currentFilter === 'En attente' ? 'f1' : currentFilter === 'Cousu' ? 'f2' : 'f3';
-            document.getElementById(activeTab).className = "px-6 py-2.5 rounded-full text-[10px] font-black bg-indigo-600 text-white shadow-lg uppercase";
+            const filtered = orders.filter(o => o.statut === currentDashFilter);
+            document.querySelectorAll('[id^="df"]').forEach(btn => btn.className = "px-6 py-2.5 rounded-full text-[10px] font-black bg-white text-slate-400 uppercase shadow-sm");
+            const activeTab = currentDashFilter === 'À faire' ? 'df1' : currentDashFilter === 'Cousu' ? 'df2' : 'df3';
+            document.getElementById(activeTab).className = "px-6 py-2.5 rounded-full text-[10px] font-black bg-indigo-600 text-white shadow-md uppercase";
 
             list.innerHTML = filtered.map(o => {
-                const jCount = getDayCounter(o.timestamp);
-                const isLate = jCount >= 5;
+                const jour = getDayDiff(o.date);
+                const isLate = (jour >= 3 && o.statut !== 'Livré');
                 return `
-                <div class="bg-white p-6 rounded-[2.5rem] border border-slate-50 shadow-sm relative overflow-hidden">
-                    <div class="absolute top-0 right-0 px-4 py-2 ${isLate ? 'bg-rose-500' : 'bg-slate-800'} text-white text-[10px] font-black rounded-bl-2xl">
-                        JOUR ${jCount}
-                    </div>
+                <div class="bg-white p-5 rounded-[2rem] shadow-sm border ${isLate ? 'border-rose-200' : 'border-slate-100'} relative overflow-hidden">
+                    ${isLate ? `<div class="absolute top-0 right-0 bg-rose-500 text-white text-[8px] px-3 py-1 font-black uppercase rounded-bl-xl shadow-sm"><i class="bi bi-exclamation-triangle-fill"></i> Retard</div>` : ''}
                     <div class="mb-4" onclick="editOrder(${o.id})">
-                        <h3 class="font-extrabold text-slate-800">${o.client}</h3>
-                        <p class="text-[9px] font-black text-indigo-500 uppercase">Livrer le : ${new Date(o.dateLivraison).toLocaleDateString('fr-FR')}</p>
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-bold text-slate-800">${o.client}</h3>
+                            <span class="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">JOUR ${jour}</span>
+                        </div>
+                        <div class="flex flex-col gap-1 mt-1">
+                            <span class="text-[9px] font-black text-indigo-500 uppercase">${o.type}</span>
+                            <p class="text-[9px] text-slate-400 font-bold uppercase"><i class="bi bi-geo-alt"></i> ${o.lieu || 'Atelier'}</p>
+                        </div>
+                        <div class="mt-3 p-2 bg-indigo-50/50 rounded-xl border border-indigo-100/50">
+                            <p class="text-[8px] font-black text-indigo-600 uppercase italic"><i class="bi bi-calendar-check"></i> Livraison : ${getProbableDelivery(o.date)}</p>
+                        </div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="changeStatut(${o.id}, '${o.statut === 'En attente' ? 'Cousu' : 'Livré'}')" class="flex-grow py-3 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase">
-                            ${o.statut === 'En attente' ? 'Prêt (Cousu) 🪡' : 'Confirmer Livraison ✅'}
+                        <button onclick="changeStatut(${o.id}, '${o.statut === 'À faire' ? 'Cousu' : 'Livré'}')" class="flex-grow py-4 ${o.statut === 'Livré' ? 'bg-slate-100 text-slate-400' : (isLate ? 'bg-rose-600 text-white' : 'bg-slate-900 text-white')} rounded-2xl font-black text-[10px] uppercase">
+                            ${o.statut === 'À faire' ? 'Cousu 🪡' : o.statut === 'Cousu' ? 'Livrer ✅' : 'Archivé'}
                         </button>
+                        <a href="tel:${o.contact}" class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100"><i class="bi bi-telephone-fill"></i></a>
+                        <button onclick="shareReceipt(${o.id}, 'wa')" class="w-12 h-12 rounded-2xl bg-green-50 text-green-600 flex items-center justify-center border border-green-100"><i class="bi bi-whatsapp"></i></button>
+                        <button onclick="askDelete(${o.id})" class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center border border-rose-100"><i class="bi bi-trash3"></i></button>
                     </div>
                 </div>`;
             }).join('');
         }
 
-        function openAddView() {
-            document.getElementById('orderForm').reset();
-            document.getElementById('editId').value = "";
-            document.getElementById('datePrise').value = getMadaDate();
-            switchView('add');
+        // --- NAVIGATION ---
+        function switchView(v) {
+            document.querySelectorAll('.view').forEach(view => view.classList.remove('view-active'));
+            document.querySelectorAll('nav button').forEach(btn => btn.classList.replace('text-indigo-600', 'text-slate-300'));
+            const el = document.getElementById('view' + v.charAt(0).toUpperCase() + v.slice(1));
+            if(el) el.classList.add('view-active');
+            const navMap = {dashboard: 'navDash', reminders: 'navReminders', calendar: 'navCalendar', stats: 'navStats'};
+            if(navMap[v]) document.getElementById(navMap[v]).classList.replace('text-slate-300', 'text-indigo-600');
+            if(v === 'dashboard') render(); if(v === 'calendar') renderDaily(); if(v === 'stats') renderStats(); if(v === 'reminders') renderReminders(); if(v === 'trash') renderTrash();
         }
 
-        document.getElementById('orderForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const editId = document.getElementById('editId').value;
-            const data = {
-                id: editId ? Number(editId) : Date.now(),
-                timestamp: document.getElementById('datePrise').value, // Date de prise modifiable
-                client: document.getElementById('client').value,
-                type: document.getElementById('type').value,
-                dateLivraison: document.getElementById('dateLivraison').value,
-                avance: Number(document.getElementById('avance').value),
-                reste: Number(document.getElementById('reste').value),
-                coutMatos: Number(document.getElementById('coutMatos').value),
-                coutMO: Number(document.getElementById('coutMO').value),
-                statut: editId ? orders.find(x=>x.id==editId).statut : 'En attente'
-            };
-            
-            if(editId) {
-                orders = orders.map(o => o.id == editId ? data : o);
-            } else {
-                orders.unshift(data);
-            }
-            
-            localStorage.setItem('yoou_v2_db', JSON.stringify(orders));
-            switchView('dashboard');
-        });
-
         function changeStatut(id, n) {
-            orders = orders.map(o => o.id === id ? {...o, statut: n, avance: (n==='Livré'? o.avance+o.reste : o.avance), reste: (n==='Livré'? 0 : o.reste)} : o);
-            localStorage.setItem('yoou_v2_db', JSON.stringify(orders));
-            render();
+            orders = orders.map(o => o.id === id ? {...o, statut: n, avance: (n==='Livré'? o.avance+o.reste:o.avance), reste: (n==='Livré'? 0:o.reste)} : o);
+            saveAll(); render();
+        }
+
+        function shareReceipt(id, platform) {
+    const o = orders.find(x => x.id === id);
+    const msg = `✨ *REÇU YOOU* ✨
+
+📅 *DATE COMMANDE :* ${new Date(o.date).toLocaleDateString('fr-FR')}
+👤 *CLIENT :* ${o.client}
+📞 *CONTACT :* ${o.contact || 'Non spécifié'}
+
+---------------------------------------
+👕 *ARTICLE :* ${o.type}
+🎨 *COULEUR :* ${o.couleur || 'Non spécifiée'}
+📏 *TAILLE / MESURES :* ${o.taille || 'Non spécifiée'}
+---------------------------------------
+
+🚚 *LIVRAISON PRÉVUE :* 👉 ${getProbableDelivery(o.date)}
+📍 *LIEU :* ${o.lieu || 'Atelier'}
+
+💰 *DÉTAILS PAIEMENT :*
+- Total : ${(o.avance + o.reste).toLocaleString()} Ar
+- Avance : ${o.avance.toLocaleString()} Ar
+- *RESTE À PAYER : ${o.reste.toLocaleString()} Ar*
+
+Merci de votre confiance ! 🪡`;
+
+    if (platform === 'wa') {
+        window.open(`https://wa.me/${MASTER_NUMBER.replace('+', '')}?text=${encodeURIComponent(msg)}`);
+    }
+}
+
+        // --- RAPPELS ---
+        function addReminder() {
+            const i = document.getElementById('reminderInput'); if(!i.value) return;
+            reminders.unshift({id: Date.now(), text: i.value, done: false}); i.value = "";
+            saveAll(); renderReminders();
+        }
+        function renderReminders() {
+            const l = document.getElementById('remindersList');
+            l.innerHTML = reminders.map(r => `<div class="flex items-center gap-3 bg-white p-4 rounded-2xl border border-slate-100 ${r.done ? 'opacity-40' : ''}">
+                <button onclick="tr(${r.id})" class="text-xl ${r.done ? 'text-green-500' : 'text-slate-200'}"><i class="bi bi-check-circle-fill"></i></button>
+                <span class="flex-grow text-sm font-bold">${r.text}</span>
+                <button onclick="dr(${r.id})" class="text-red-400"><i class="bi bi-trash3-fill"></i></button>
+            </div>`).join('');
+        }
+        function tr(id) { reminders = reminders.map(r => r.id===id ? {...r, done:!r.done} : r); saveAll(); renderReminders(); }
+        function dr(id) { reminders = reminders.filter(r => r.id!==id); saveAll(); renderReminders(); }
+
+        // --- STATS ---
+        function renderStats() {
+            const e = orders.reduce((s, o) => s + o.avance, 0);
+            const r = orders.reduce((s, o) => s + o.reste, 0);
+            const count = orders.filter(o => o.statut !== 'Livré').length;
+            document.getElementById('statsContent').innerHTML = `<div class="bg-indigo-600 p-8 rounded-[2rem] text-white text-center shadow-lg"><p class="text-[10px] font-black opacity-60 uppercase tracking-widest">En cours</p><p class="text-5xl font-black italic mt-1">${count}</p></div><div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100"><div class="flex justify-between text-[10px] font-black uppercase mb-4 text-slate-400"><span>Encaissé: ${e.toLocaleString()} Ar</span><span>Reste: ${r.toLocaleString()} Ar</span></div><div class="w-full bg-slate-100 h-6 rounded-full overflow-hidden flex shadow-inner"><div class="bg-indigo-500 h-full transition-all" style="width: ${(e/(e+r || 1))*100}%"></div></div></div>`;
+        }
+
+        // --- IMAGES & FORMULAIRE ---
+        function previewImage(input) {
+            const f = input.files[0]; if (f) {
+                const reader = new FileReader(); reader.onload = (e) => {
+                    currentPhotoBase64 = e.target.result;
+                    document.getElementById('imagePreview').src = currentPhotoBase64;
+                    document.getElementById('imagePreview').classList.remove('hidden');
+                }; reader.readAsDataURL(f);
+            }
+        }
+
+        function openAddView() {
+            document.getElementById('orderForm').reset(); document.getElementById('editId').value = "";
+            document.getElementById('datePrise').value = getMadaDate();
+            document.getElementById('imagePreview').classList.add('hidden');
+            currentPhotoBase64 = ""; switchView('add');
         }
 
         function editOrder(id) {
             const o = orders.find(x => x.id === id);
-            document.getElementById('editId').value = o.id;
-            document.getElementById('datePrise').value = o.timestamp.split('T')[0];
-            document.getElementById('dateLivraison').value = o.dateLivraison;
-            document.getElementById('client').value = o.client;
-            document.getElementById('type').value = o.type;
-            document.getElementById('avance').value = o.avance;
-            document.getElementById('reste').value = o.reste;
-            document.getElementById('coutMatos').value = o.coutMatos;
-            document.getElementById('coutMO').value = o.coutMO;
+            document.getElementById('editId').value = o.id; document.getElementById('datePrise').value = o.date;
+            document.getElementById('client').value = o.client; document.getElementById('contact').value = o.contact || "";
+            document.getElementById('lieu').value = o.lieu || ""; document.getElementById('type').value = o.type;
+            document.getElementById('couleur').value = o.couleur || ""; document.getElementById('taille').value = o.taille || "";
+            document.getElementById('avance').value = o.avance; document.getElementById('reste').value = o.reste;
+            currentPhotoBase64 = o.photo || "";
+            if(o.photo) { document.getElementById('imagePreview').src = o.photo; document.getElementById('imagePreview').classList.remove('hidden'); }
             switchView('add');
         }
 
-        function switchView(view) {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('view-active'));
-            document.querySelectorAll('nav button').forEach(b => b.classList.replace('active-nav', 'text-slate-300'));
-            document.getElementById('view' + view.charAt(0).toUpperCase() + view.slice(1)).classList.add('view-active');
-            if(view === 'dashboard') render();
-            if(view === 'finances') renderFinances();
-        }
+        document.getElementById('orderForm').addEventListener('submit', (e) => {
+            e.preventDefault(); const eid = document.getElementById('editId').value;
+            const data = {
+                id: eid ? Number(eid) : Date.now(), date: document.getElementById('datePrise').value,
+                client: document.getElementById('client').value, contact: document.getElementById('contact').value,
+                lieu: document.getElementById('lieu').value, type: document.getElementById('type').value,
+                couleur: document.getElementById('couleur').value, taille: document.getElementById('taille').value,
+                avance: Number(document.getElementById('avance').value), reste: Number(document.getElementById('reste').value),
+                photo: currentPhotoBase64, statut: eid ? orders.find(x => x.id == eid).statut : 'À faire'
+            };
+            if(eid) orders = orders.map(o => o.id == eid ? data : o); else orders.unshift(data);
+            saveAll(); switchView('dashboard');
+        });
 
-        function renderFinances() {
-            const list = document.getElementById('financeList');
-            list.innerHTML = orders.map(o => {
-                const totalVente = o.avance + o.reste;
-                const depenses = (o.coutMatos || 0) + (o.coutMO || 0);
-                return `<div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex justify-between items-center">
-                    <div><p class="font-bold">${o.client}</p><p class="text-[10px] text-slate-400 uppercase">${o.type}</p></div>
-                    <div class="text-right text-green-600 font-black text-xs">${(totalVente - depenses).toLocaleString()} Ar</div>
-                </div>`;
-            }).join('');
+        function setDashFilter(f) { currentDashFilter = f; render(); }
+        function exportData() {
+            const b = new Blob([JSON.stringify({orders, trash, reminders})], {type: 'application/json'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(b);
+            a.download = `YOOU_Backup.json`; a.click();
         }
-
-        function setFilter(f) { currentFilter = f; render(); }
         render();
     </script>
 </body>
