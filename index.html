@@ -303,17 +303,17 @@
     const msg = `✨ *REÇU YOOU* ✨
 
 📅 *DATE COMMANDE :* ${new Date(o.date).toLocaleDateString('fr-FR')}
-👤 *CLIENT :* ${o.client}
-📞 *CONTACT :* ${o.contact || 'Non spécifié'}
+👤 *CLIENT : ${o.client}
+📞 *CONTACT : ${o.contact || 'Non spécifié'}
 
 ---------------------------------------
-👕 *ARTICLE :* ${o.type}
-🎨 *COULEUR :* ${o.couleur || 'Non spécifiée'}
-📏 *TAILLE / MESURES :* ${o.taille || 'Non spécifiée'}
+👕 *ARTICLE : ${o.type}
+🎨 *COULEUR : ${o.couleur || 'Non spécifiée'}
+📏 *TAILLE / MESURES : ${o.taille || 'Non spécifiée'}
 ---------------------------------------
 
-🚚 *LIVRAISON PRÉVUE :* 👉 ${getProbableDelivery(o.date)}
-📍 *LIEU :* ${o.lieu || 'Atelier'}
+🚚 *LIVRAISON PRÉVUE : 👉 ${getProbableDelivery(o.date)}
+📍 *LIEU : ${o.lieu || 'Atelier'}
 
 💰 *DÉTAILS PAIEMENT :*
 - Total : ${(o.avance + o.reste).toLocaleString()} Ar
